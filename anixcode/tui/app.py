@@ -20,11 +20,12 @@ from ..agent import (
     Agent, AgentError, Attached, Compacted, Compacting, PermissionRequest, StepFinished, ToolFinished, ToolStarted,
 )
 from ..danger import check_command
+from ..mcp import McpError, McpManager, parse_add, status_rows
 from ..mentions import index_files, rank_paths
 from ..tools import ToolContext, default_tools
 from ..airpc import AirpcReporter
 from ..llm import LLMClient, LLMError, ReasoningDelta, Retrying, TextDelta
-from ..settings import Credentials, Settings, config_dir, load_auth, save_settings
+from ..settings import Credentials, Settings, config_dir, load_auth, load_settings, save_settings
 from ..storage import Session, Store
 from ..tools import ToolResult
 from .anim import THEME_LABELS, ActivityIndicator, AnimatedLogo, Gradient, make_themes, palette
@@ -79,6 +80,7 @@ class AnixApp(App):
         self.auth = load_auth(base)
         self.session: Session = store.create(str(self.project_root), settings.model)
         self.agent: Agent | None = None
+        self.mcp: McpManager | None = None
         self._llm_client: LLMClient | None = None
         self._agent_busy = False
         self._agent_mode = "build"
@@ -116,6 +118,7 @@ class AnixApp(App):
         self._apply_theme(self.settings.theme)
         self.set_interval(1 / 10, self._pulse_brand)
         self._build_agent()
+        self.run_worker(self._start_mcp(), group="mcp", exclusive=True)
         self._refresh_bars()
         prompt = self.query_one(PromptInput)
         prompt.mention_list = self.query_one(MentionList)
@@ -147,8 +150,30 @@ class AnixApp(App):
             asyncio.create_task(self._llm_client.aclose())
         self._llm_client = LLMClient(cred.base_url or p.base_url, cred.api_key)
         self.agent = Agent(self._llm_client, self.settings.model, self.project_root, self.settings, ask=self._ask_permission,
-                           reporter=AirpcReporter(self.settings.airpc), provider=self.settings.provider)
+                           reporter=AirpcReporter(self.settings.airpc), provider=self.settings.provider,
+                           tools=default_tools() | (self.mcp.tools() if self.mcp else {}))
         self.agent.mode = old_mode
+
+    async def _start_mcp(self) -> None:
+        """Start the MCP servers from settings.json in the background; the chat works meanwhile."""
+        if self.agent:
+            self.agent.tools = default_tools()  # no stale tools of the old project while we restart
+        if self.mcp is not None:
+            await self.mcp.close()
+            self.mcp = None
+        if not self.settings.mcp_servers:
+            return
+        mcp = McpManager(self.settings.mcp_servers, self.project_root)
+        await mcp.start()
+        self.mcp = mcp
+        if self.agent:
+            self.agent.tools = default_tools() | mcp.tools()
+        # toasts, not chat notices: the agent may already be streaming an answer into the chat
+        if mcp.servers:
+            self._notify_plain(tr("🔌 MCP подключены: {0}", ", ".join(f"{s.name} ({len(s.tools)})" for s in mcp.servers)),
+                               timeout=3)
+        for name, err in mcp.errors.items():
+            self._notify_plain(tr("⚠ MCP {0}: {1}", name, err), severity="warning", timeout=8)
 
     async def _ask_permission(self, req: PermissionRequest) -> str:
         """Inline approval: a line above the prompt, Enter = yes, Esc = no."""
@@ -347,6 +372,9 @@ class AnixApp(App):
             display = f"/{name}" + (f" {args}" if args else "") + f" · {cmd.description}"
             self.run_agent(commands.render(cmd.template, args), display=display)
             return
+        if cmd.action == "mcp":  # the only action that takes arguments
+            self.action_mcp(args)
+            return
         actions = {
             "help": self.action_help, "new": self.action_new_session, "sessions": self.action_sessions,
             "undo": self.action_undo, "redo": self.action_redo, "compact": self.action_compact,
@@ -513,6 +541,7 @@ class AnixApp(App):
         self._remember_project()
         self.session = self.store.create(str(self.project_root), self.settings.model)
         self._build_agent()
+        self.run_worker(self._start_mcp(), group="mcp", exclusive=True)
         await self.query_one("#chat", VerticalScroll).mount(self._welcome())
         self._refresh_bars()
         self._warn_if_unsuitable()
@@ -587,6 +616,8 @@ class AnixApp(App):
         rows += [(tr("Сессия"), tr('{0} · сообщений: {1}', s.title, len(s.messages))),
                  ("AGENTS.md", tr("есть") if (self.project_root / "AGENTS.md").exists() else tr("нет (/init создаст)")),
                  (tr("Свои команды"), ", ".join("/" + c.name for c in custom) or tr("нет"))]
+        if self.mcp and (self.mcp.servers or self.mcp.errors):
+            rows.append(("MCP", ", ".join(f"{n} {'✓' if ok else '✗'} {d}" for n, ok, d in self.mcp.summary())))
         for k, v in rows:
             lines.append(f"  {k:<13}", style="dim")
             lines.append(v + "\n")
@@ -661,10 +692,119 @@ class AnixApp(App):
                 row(False, tr("модель"), tr("не подключена: /connect"))
             row(True if AirpcReporter(self.settings.airpc).active else None, "AI-RPC",
                 tr("найден, статус уйдёт в Discord") if AirpcReporter(self.settings.airpc).active else tr("не запущен (необязательно)"))
+            for name, ok, detail in (self.mcp.summary() if self.mcp else []):
+                row(ok, f"MCP {name}", detail)
             await self.query_one("#chat", VerticalScroll).mount(Notice(out))
             self._scroll()
 
         self.run_worker(go())
+
+    # -- /mcp ------------------------------------------------------------------------
+    def action_mcp(self, args: str = "") -> None:
+        sub, _, rest = args.strip().partition(" ")
+        sub, rest = sub.lower(), rest.strip()
+        if sub in ("", "list", "ls"):
+            self._post_notice(self._mcp_list())
+            return
+        if sub == "tools":
+            self._post_notice(self._mcp_tools(rest))
+            return
+        if self._agent_busy:  # don't swap tools under a running agent
+            self._notify_plain(tr("Сначала остановите агента (Esc)."), severity="warning")
+            return
+        servers = self.settings.mcp_servers
+        try:
+            if sub == "add":
+                name, cfg = parse_add(rest)
+                note = (tr("MCP {0} обновлён, подключаю…", name) if name in servers
+                        else tr("MCP {0} добавлен, подключаю…", name))
+                servers[name] = cfg
+            elif sub in ("remove", "rm"):
+                name = self._mcp_name(rest)
+                del servers[name]
+                note = tr("MCP {0} удалён", name)
+            elif sub in ("on", "off"):
+                name = self._mcp_name(rest)
+                cfg = {k: v for k, v in servers[name].items() if k != "disabled"}
+                if sub == "off":
+                    cfg["disabled"] = True
+                servers[name] = cfg
+                note = tr("MCP {0} выключен", name) if sub == "off" else tr("MCP {0} включён, подключаю…", name)
+            elif sub in ("reload", "restart"):
+                self.settings.mcp_servers = load_settings(self.config_base).mcp_servers
+                note = tr("Перезапускаю MCP-серверы…")
+            else:
+                raise McpError(tr("Нет подкоманды «{0}». Есть: add, remove, on, off, tools, reload", sub))
+        except McpError as e:
+            self._notify_plain(str(e), severity="warning", timeout=8)
+            return
+        if sub not in ("reload", "restart"):
+            save_settings(self.settings, self.config_base)
+        self._notify_plain("🔌 " + note, timeout=3)
+        self.run_worker(self._start_mcp(), group="mcp", exclusive=True)
+
+    def _mcp_name(self, rest: str) -> str:
+        name = rest.split()[0] if rest else ""
+        if name not in self.settings.mcp_servers:
+            known = ", ".join(self.settings.mcp_servers) or tr("нет")
+            raise McpError(tr("Нет MCP-сервера «{0}». Есть: {1}", name, known))
+        return name
+
+    def _mcp_list(self) -> Text:
+        out = Text(tr("🔌 MCP-серверы\n"), style="bold")
+        rows = status_rows(self.settings.mcp_servers, self.mcp)
+        if not rows:
+            out.append(tr("  Пока нет ни одного. Например:\n"), style="dim")
+            out.append("  /mcp add fs npx -y @modelcontextprotocol/server-filesystem .\n"
+                       "  /mcp add context7 https://mcp.context7.com/mcp\n")
+        marks = {"ok": ("✓", "green"), "error": ("✗", "red"), "off": ("–", "dim"), "starting": ("…", "yellow")}
+        for name, state, info, where in rows:
+            mark, style = marks[state]
+            if state == "ok":
+                detail = tr("инструментов: {0} · {1}", info, where)
+            elif state == "error":
+                detail = info.splitlines()[0][:200] if info else ""
+            elif state == "off":
+                detail = tr("выключен · {0}", where)
+            else:
+                detail = tr("подключается… · {0}", where)
+            out.append(f"  {mark} ", style=style)
+            out.append(f"{name:<14}", style="bold")
+            out.append(detail + "\n", style="red" if state == "error" else "dim")
+        out.append(tr("\n  /mcp tools [имя] · add · remove · on · off · reload\n  Файл настроек: {0}",
+                      (self.config_base or config_dir()) / "settings.json"), style="dim")
+        return out
+
+    def _mcp_tools(self, name: str) -> Text:
+        servers = [s for s in (self.mcp.servers if self.mcp else []) if not name or s.name == name]
+        if not servers:
+            return Text(tr("Нет подключённого MCP-сервера «{0}». Список: /mcp", name) if name
+                        else tr("Нет подключённых MCP-серверов. Список: /mcp"), style="yellow")
+        out = Text()
+        for s in servers:
+            out.append(f"🔌 {s.name}", style="bold")
+            out.append(tr("  инструментов: {0}\n", len(s.tools)), style="dim")
+            for t in s.tools:
+                desc = " ".join(str(t.get("description") or "").split())
+                out.append(f"  {t['name']}", style="bold")
+                if desc:
+                    out.append("  " + (desc if len(desc) <= 90 else desc[:89] + "…"), style="dim")
+                out.append("\n")
+        return out
+
+    def _post_notice(self, content: Text) -> None:
+        async def go() -> None:
+            await self.query_one("#chat", VerticalScroll).mount(Notice(content))
+            self._scroll()
+
+        self.run_worker(go())
+
+    def _notify_plain(self, message: str, **kwargs: Any) -> None:
+        """notify() without markup: server errors and usage hints contain [brackets]."""
+        try:
+            self.notify(message, markup=False, **kwargs)
+        except TypeError:  # an older Textual without markup=
+            self.notify(message.replace("[", "\\["), **kwargs)
 
     def action_compact(self) -> None:
         if self._agent_busy or not self.agent:
@@ -807,6 +947,8 @@ class AnixApp(App):
         self.push_screen(HelpScreen(self._commands()))
 
     async def on_unmount(self) -> None:
+        if self.mcp is not None:
+            await self.mcp.close()
         if self._llm_client is not None:
             await self._llm_client.aclose()
         self.store.close()

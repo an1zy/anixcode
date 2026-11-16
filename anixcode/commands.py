@@ -90,6 +90,8 @@ ACTIONS: tuple[Command, ...] = (
     Command("export", tr("сохранить сессию в Markdown"), action="export"),
     Command("language", tr("язык интерфейса: русский / English"), action="language"),
     Command("doctor", tr("проверить git, ripgrep, подключение к модели"), action="doctor"),
+    Command("mcp", tr("MCP-серверы: список, добавить, удалить, вкл/выкл"), action="mcp",
+            args_hint=tr("[add|remove|on|off|tools|reload]")),
     Command("exit", tr("выход"), action="exit"),
     Command("quit", tr("выход"), action="exit"),
 )

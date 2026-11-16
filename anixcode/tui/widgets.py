@@ -326,7 +326,7 @@ class ToolCard(Vertical):
             yield self.tool_output
 
     def _set_header(self, mark: str, extra: str | Text) -> None:
-        icon = TOOL_ICONS.get(self.tool, "•")
+        icon = TOOL_ICONS.get(self.tool, "◇" if self.tool.startswith("mcp__") else "•")
         line = Text.assemble((f"{mark} ", "bold"), (f"{icon} ", "bold"), (self.title_text, ""))
         if extra:
             line.append("  ")
@@ -340,6 +340,9 @@ class ToolCard(Vertical):
         if preview:
             if kind == "edit":
                 self.tool_output.update(Syntax(preview.rstrip(), "diff", theme="monokai", word_wrap=True,
+                                               background_color="default"))
+            elif kind == "mcp":
+                self.tool_output.update(Syntax(preview.rstrip(), "json", theme="monokai", word_wrap=True,
                                                background_color="default"))
             else:
                 self.tool_output.update(Text(f"$ {preview}", style="bold"))
@@ -358,7 +361,8 @@ class ToolCard(Vertical):
                                             background_color="default"))
             if result.added + result.removed <= 30:
                 self.add_class("open")  # small diffs are shown right away
-        elif result.output and self.tool in ("bash", "grep", "glob", "ls") or result.error:
+        elif result.output and (self.tool in ("bash", "grep", "glob", "ls") or self.tool.startswith("mcp__")) \
+                or result.error:
             out = result.output.strip()
             lines = out.splitlines()
             shown = "\n".join(lines[:200]) + (tr('\n… ещё {0} строк', len(lines) - 200) if len(lines) > 200 else "")

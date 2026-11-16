@@ -12,8 +12,10 @@ from . import __version__, providers
 from .agent import Agent, AgentError, Compacted, PermissionRequest, ToolFinished, ToolStarted
 from .airpc import AirpcReporter
 from .llm import LLMClient, LLMError, ReasoningDelta, Retrying, TextDelta
+from .mcp import McpManager
 from .settings import Credentials, config_dir, load_auth, load_settings, save_auth, save_settings
 from .storage import Store
+from .tools import default_tools
 
 COMMANDS = {"run", "connect", "models"}
 
@@ -127,9 +129,13 @@ def cmd_run(args: argparse.Namespace) -> int:
     async def go() -> int:
         client = _client(settings, auth)
         store = Store(config_dir() / "sessions.db")
+        mcp = McpManager(settings.mcp_servers, root)
+        await mcp.start()
+        for name, err in mcp.errors.items():
+            print(tr("MCP {0}: не подключился: {1}", name, err), file=sys.stderr)
         session = store.create(str(root), settings.model)
         agent = Agent(client, settings.model, root, settings, ask=ask, reporter=AirpcReporter(settings.airpc),
-                      provider=settings.provider)
+                      provider=settings.provider, tools=default_tools() | mcp.tools())
         agent.mode = "plan" if args.plan else "build"
         code = 0
         try:
@@ -150,6 +156,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 elif isinstance(ev, Compacted):
                     print(tr('\n🗜 история сжата: ~{0} → ~{1} токенов', ev.before, ev.after), file=sys.stderr)
         finally:
+            await mcp.close()
             await client.aclose()
             store.close()
         print()

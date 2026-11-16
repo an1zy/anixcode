@@ -333,7 +333,8 @@ class Agent:
             policy = "allow" if self.settings.full_access else self.settings.permissions.get(tool.kind, "ask")
             if policy == "deny":
                 return ToolResult("This action is disabled in the settings.", error=True)
-            if policy == "ask" and tool.kind not in self._always:
+            key = tool.name if tool.kind == "mcp" else tool.kind  # MCP: approve one tool, not every server
+            if policy == "ask" and key not in self._always:
                 try:
                     preview = tool.preview(args, self.ctx)
                 except Exception:
@@ -347,7 +348,7 @@ class Agent:
                         return ToolResult(f"The user denied this action and said: {req.feedback}", error=True)
                     return ToolResult("The user denied this action. Ask what they want instead.", error=True)
                 if decision == "always":
-                    self._always.add(tool.kind)
+                    self._always.add(key)
         try:
             return await tool.run(args, self.ctx)
         except ToolError as e:

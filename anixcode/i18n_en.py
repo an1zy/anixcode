@@ -4,6 +4,41 @@ Generated from the code; when you add a tr() string, add its translation here.
 """
 
 EN: dict[str, str] = {
+    "MCP {0}: не подключился: {1}": "MCP {0}: failed to connect: {1}",
+    "🔌 MCP подключены: {0}": "🔌 MCP connected: {0}",
+    "⚠ MCP {0}: {1}": "⚠ MCP {0}: {1}",
+    # mcp.py
+    "Формат: {0}": "Usage: {0}",
+    "Имя сервера: латиница, цифры, - и _ (например github), а не «{0}»":
+        "Server name: Latin letters, digits, - and _ (e.g. github), not “{0}”",
+    "Не указана команда или адрес сервера. Формат: {0}": "No command or server address. Usage: {0}",
+    "Не разобрать команду: {0}": "Cannot parse the command: {0}",
+    'KEY=value работает только для локальных серверов; для адреса используйте заголовки: "Authorization: Bearer ${TOKEN}"':
+        'KEY=value only works for local servers; for an address use headers: "Authorization: Bearer ${TOKEN}"',
+    'Заголовок должен выглядеть как "Имя: значение", а не «{0}»': 'A header looks like "Name: value", not “{0}”',
+    # commands.py
+    "MCP-серверы: список, добавить, удалить, вкл/выкл": "MCP servers: list, add, remove, on/off",
+    "[add|remove|on|off|tools|reload]": "[add|remove|on|off|tools|reload]",
+    # tui/app.py
+    "MCP {0} обновлён, подключаю…": "MCP {0} updated, connecting…",
+    "MCP {0} добавлен, подключаю…": "MCP {0} added, connecting…",
+    "MCP {0} удалён": "MCP {0} removed",
+    "MCP {0} выключен": "MCP {0} turned off",
+    "MCP {0} включён, подключаю…": "MCP {0} turned on, connecting…",
+    "Перезапускаю MCP-серверы…": "Restarting MCP servers…",
+    "Нет подкоманды «{0}». Есть: add, remove, on, off, tools, reload":
+        "No subcommand “{0}”. Available: add, remove, on, off, tools, reload",
+    "Нет MCP-сервера «{0}». Есть: {1}": "No MCP server “{0}”. Configured: {1}",
+    "🔌 MCP-серверы\n": "🔌 MCP servers\n",
+    "  Пока нет ни одного. Например:\n": "  None yet. For example:\n",
+    "инструментов: {0} · {1}": "tools: {0} · {1}",
+    "выключен · {0}": "off · {0}",
+    "подключается… · {0}": "connecting… · {0}",
+    "\n  /mcp tools [имя] · add · remove · on · off · reload\n  Файл настроек: {0}":
+        "\n  /mcp tools [name] · add · remove · on · off · reload\n  Settings file: {0}",
+    "Нет подключённого MCP-сервера «{0}». Список: /mcp": "MCP server “{0}” is not connected. List: /mcp",
+    "Нет подключённых MCP-серверов. Список: /mcp": "No MCP servers connected. List: /mcp",
+    "  инструментов: {0}\n": "  tools: {0}\n",
     'Не удалось сжать историю: модель вернула пустую сводку.': 'Could not compress the history: the model returned an empty summary.',
     'Агент сделал {0} шагов и остановился. Напишите «продолжай».': 'The agent made {0} steps and stopped. Type “continue”.',
     'Модель ничего не ответила.': 'The model returned nothing.',

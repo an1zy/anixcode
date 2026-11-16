@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, Literal
 
-Kind = Literal["read", "edit", "exec"]
+Kind = Literal["read", "edit", "exec", "mcp"]
 
 IGNORE_DIRS = frozenset({
     ".git", "node_modules", "__pycache__", ".venv", "venv", ".mypy_cache", ".pytest_cache", ".ruff_cache",

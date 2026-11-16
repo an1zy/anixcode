@@ -1,5 +1,14 @@
 # Изменения
 
+## 0.9.0
+
+- Поддержка серверов Model Context Protocol (MCP): локальные (stdio) и удалённые (Streamable HTTP)
+- Команда `/mcp` для управления серверами: `add`, `remove`, `on`, `off`, `tools`, `reload`
+- Настройка `mcp_servers` в `settings.json` (совместима с форматом Claude Desktop и Cursor)
+- Точечные разрешения для MCP-инструментов в режиме запроса подтверждений
+- Поддержка MCP в консольном режиме `anixcode run`
+- Статус MCP-серверов в `/status` и `/doctor`
+
 ## 0.8.0
 
 - Английский интерфейс: язык по системе, переключение `/language`; README на английском (и README.ru.md)

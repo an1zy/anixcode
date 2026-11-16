@@ -119,6 +119,7 @@ The set follows Claude Code and OpenCode.
 | `/status` | summary: project, model, tokens, context |
 | `/export` | save the session as Markdown |
 | `/doctor` | check git, ripgrep, connection to the model, AI-RPC |
+| `/mcp [add|remove|on|off|tools|reload]` | MCP servers: list, add, remove, turn on/off, show tools, restart |
 | `/language` | interface language: Русский / English (after a restart) |
 
 **Quick input:**
@@ -184,11 +185,33 @@ pip install -e ".[dev]" && pytest
 Translations: interface strings are written in Russian in the code as `tr("…")`; English versions live in
 `anixcode/i18n_en.py` (a test checks that every string has one).
 
+## MCP servers
+
+Add servers via `/mcp add` or directly in `settings.json` (same format as `mcpServers` in Claude Desktop and Cursor):
+
+```json
+"mcp_servers": {
+  "github":   {"command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"],
+               "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"}},
+  "context7": {"url": "https://mcp.context7.com/mcp"},
+  "big":      {"command": "uvx", "args": ["some-server"], "tools": ["search"], "timeout": 300},
+  "old":      {"command": "...", "disabled": true}
+}
+```
+
+- `command` + `args` + `env`: a local server (stdio), started in the project folder.
+- `url` + `headers`: a remote server (Streamable HTTP).
+- `${VAR}` is taken from the environment, so tokens don't have to be in the file.
+- `tools`: keep only these tools (saves context). `timeout`: seconds per call (default 120).
+- The model sees them as `mcp__<server>__<tool>`. They ask for approval like edits and commands; `"permissions": {"mcp": "allow"}` turns that off.
+- `/mcp`, `/status` and `/doctor` show which servers connected.
+
 ```
 anixcode/
   llm.py          OpenAI-compatible API client: streaming, tool calls, readable errors, retries
   agent.py        the agent loop, approvals, Build/Plan modes, undo/redo
   tools/          read, ls, glob, grep, edit, write, bash
+  mcp.py          MCP client (stdio + Streamable HTTP)
   prompts.py      system prompt + AGENTS.md
   storage.py      sessions and file snapshots in SQLite
   checkpoints.py  file snapshots for /undo
@@ -208,6 +231,6 @@ anixcode/
 - [x] `@file` in prompts, `/init`, dangerous-command highlighting
 - [x] `/review`, `/commit`, `/test`…, own commands from `.md`, `!` and `#`
 - [x] English interface
-- [ ] MCP servers
+- [x] MCP servers
 - [ ] Several agents in parallel
 - [ ] Desktop version

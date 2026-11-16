@@ -117,6 +117,7 @@ vitest, не трогай папку legacy». Агент читает его п
 | `/status` | сводка: проект, модель, токены, контекст |
 | `/export` | сохранить сессию в Markdown |
 | `/doctor` | проверить git, ripgrep, подключение к модели, AI-RPC |
+| `/mcp [add|remove|on|off|tools|reload]` | MCP-серверы: список, добавить, удалить, вкл/выкл, инструменты, перезапуск |
 | `/language` | язык интерфейса: русский / English (после перезапуска) |
 
 **Быстрый ввод:**
@@ -181,11 +182,33 @@ anixcode models                              # список моделей пр�
 pip install -e ".[dev]" && pytest
 ```
 
+## MCP-серверы
+
+Добавить сервер можно через команду `/mcp add` или прямо в `settings.json` (формат такой же, как `mcpServers` в Claude Desktop и Cursor):
+
+```json
+"mcp_servers": {
+  "github":   {"command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"],
+               "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"}},
+  "context7": {"url": "https://mcp.context7.com/mcp"},
+  "big":      {"command": "uvx", "args": ["some-server"], "tools": ["search"], "timeout": 300},
+  "old":      {"command": "...", "disabled": true}
+}
+```
+
+- `command` + `args` + `env`: локальный сервер (stdio), запускается в папке проекта.
+- `url` + `headers`: удалённый сервер (Streamable HTTP).
+- `${VAR}` подставляется из переменных окружения, чтобы не хранить токены в файле.
+- `tools`: оставить только нужные инструменты (экономит контекст). `timeout`: секунды на вызов (по умолчанию 120).
+- Модель видит их как `mcp__<сервер>__<инструмент>`. Они запрашивают разрешение так же, как правки файлов; `"permissions": {"mcp": "allow"}` отключает запрос.
+- `/mcp`, `/status` и `/doctor` показывают подключённые серверы.
+
 ```
 anixcode/
   llm.py          клиент OpenAI-совместимого API: стриминг, tool calls, понятные ошибки
   agent.py        цикл агента, разрешения, режимы Build/Plan
   tools/          read, ls, glob, grep, edit, write, bash
+  mcp.py          клиент MCP (stdio + Streamable HTTP)
   prompts.py      системный промпт + AGENTS.md
   storage.py      сессии и снимки файлов в SQLite
   checkpoints.py  снимки файлов для /undo
@@ -203,6 +226,6 @@ anixcode/
 - [x] Сжатие длинной истории, повторы при сбоях
 - [x] `@файл` в запросе, `/init` для AGENTS.md, предупреждения об опасных командах
 - [x] Команды `/review`, `/commit`, `/test`…, свои команды из `.md`, `!` и `#`
-- [ ] MCP-серверы
+- [x] MCP-серверы
 - [ ] Несколько агентов параллельно
 - [ ] Десктоп-версия

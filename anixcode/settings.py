@@ -36,6 +36,8 @@ class Settings:
     airpc: bool = True  # report activity to AI-RPC (Discord status) when it is running
     # Your own OpenAI-compatible providers: [{"id": "user:...", "name": ..., "base_url": ...}]
     custom_providers: list[dict[str, Any]] = field(default_factory=list)
+    # MCP servers, same shape as "mcpServers" in Claude Desktop / Cursor (see anixcode/mcp.py)
+    mcp_servers: dict[str, dict[str, Any]] = field(default_factory=dict)
     recent_projects: list[str] = field(default_factory=list)
 
     @property
@@ -74,6 +76,8 @@ def load_settings(base: Path | None = None) -> Settings:
     ]
     s.recent_projects = [p for p in (s.recent_projects if isinstance(s.recent_projects, list) else [])
                          if isinstance(p, str)]
+    s.mcp_servers = {str(k): v for k, v in (s.mcp_servers.items() if isinstance(s.mcp_servers, dict) else [])
+                     if isinstance(v, dict)}
     return s
 
 
