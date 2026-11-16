@@ -1,8 +1,6 @@
 # ANIX Code
 
-[![tests](https://github.com/an1zy/anixcode/actions/workflows/tests.yml/badge.svg)](https://github.com/an1zy/anixcode/actions/workflows/tests.yml)
-![python](https://img.shields.io/badge/python-3.11%2B-blue) ![license](https://img.shields.io/badge/license-MIT-green)
-![status](https://img.shields.io/badge/status-alpha-orange)
+![python](https://img.shields.io/badge/python-3.11%2B-blue) ![license](https://img.shields.io/badge/license-MIT-green) [![PyPI](https://img.shields.io/pypi/v/anixcode)](https://pypi.org/project/anixcode/) ![status](https://img.shields.io/badge/status-alpha-orange)
 
 🇬🇧 [English](README.md) · 🇷🇺 Русский
 
