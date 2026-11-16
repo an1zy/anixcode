@@ -1,0 +1,281 @@
+Screen {
+    background: $background;
+}
+#header {
+    height: 1;
+    background: $panel;
+    padding: 0 1;
+}
+#brand {
+    width: 1fr;
+}
+#mode {
+    width: auto;
+    padding: 0 1;
+    background: $primary;
+    color: $background;
+    text-style: bold;
+}
+#mode.plan {
+    background: $accent;
+}
+#chat {
+    height: 1fr;
+    padding: 0 2 1 2;
+    scrollbar-size-vertical: 1;
+}
+#welcome {
+    width: 100%;
+    margin: 3 0 1 0;
+    text-align: center;
+    color: $accent;
+}
+UserMessage {
+    margin: 1 0 0 0;
+    padding: 0 1;
+    border-left: thick $primary;
+    background: $surface;
+}
+AssistantMessage {
+    margin: 1 0 0 0;
+    padding: 0 1;
+    background: transparent;
+}
+ReasoningBlock {
+    margin: 1 0 0 0;
+    padding: 0 1;
+    color: $text-muted;
+    text-style: italic;
+    border-left: thick $panel;
+}
+ToolCard {
+    height: auto;
+    margin: 0 0 0 1;
+}
+ToolCard .tool-header {
+    color: $text-muted;
+}
+ToolCard.done .tool-header {
+    color: $text;
+}
+ToolCard.error .tool-header {
+    color: $error;
+}
+ToolCard.kind-edit.done .tool-header {
+    color: $success;
+}
+ToolCard .tool-body {
+    display: none;
+    height: auto;
+    max-height: 24;
+    margin: 0 0 0 4;
+    border-left: thick $panel;
+}
+ToolCard.open .tool-body {
+    display: block;
+}
+ErrorMessage {
+    margin: 1 0 0 0;
+    padding: 0 1;
+    color: $error;
+    border-left: thick $error;
+}
+Notice {
+    margin: 1 0 0 0;
+    color: $text-muted;
+}
+#composer {
+    height: auto;
+    padding: 0 1;
+}
+PromptInput {
+    height: auto;
+    min-height: 3;
+    max-height: 12;
+    border: round $panel;
+    background: $surface;
+}
+PromptInput:focus {
+    border: round $primary;
+}
+#activity {
+    height: 1;
+    padding: 0 1;
+}
+#statusbar {
+    height: 1;
+    padding: 0 2;
+    background: $background;
+    color: $text-muted;
+}
+#status-model {
+    width: 1fr;
+}
+#status-usage {
+    width: auto;
+}
+ModalScreen {
+    align: center middle;
+    background: $background 70%;
+}
+#dialog {
+    width: 90;
+    max-width: 95%;
+    height: auto;
+    max-height: 90%;
+    padding: 1 2;
+    background: $surface;
+    border: round $primary;
+}
+.dialog-title {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
+}
+.hint {
+    color: $text-muted;
+}
+.error {
+    color: $error;
+    height: auto;
+}
+#perm-preview {
+    height: auto;
+    max-height: 22;
+    margin: 1 0;
+    border: round $panel;
+}
+.buttons {
+    height: auto;
+    margin-top: 1;
+}
+.buttons Button {
+    margin-right: 1;
+}
+#model-row {
+    height: auto;
+}
+#model-row Input {
+    width: 1fr;
+}
+#models {
+    display: none;
+    height: 10;
+}
+#models.visible {
+    display: block;
+}
+#session-list {
+    height: auto;
+    max-height: 20;
+}
+#provider-row {
+    height: auto;
+}
+#provider-row Select {
+    width: 1fr;
+}
+#provider-row Button {
+    margin-left: 1;
+}
+#theme-list {
+    height: auto;
+    max-height: 16;
+}
+#dialog.wide {
+    width: 110;
+    height: 90%;
+}
+#proj-row {
+    height: auto;
+}
+#proj-row Input {
+    width: 1fr;
+}
+#proj-tabs {
+    height: 1fr;
+}
+#recent-list, #repos-list {
+    height: 1fr;
+}
+#folder-tree {
+    height: 1fr;
+}
+#brand:hover {
+    background: $boost;
+}
+#drive-row {
+    height: auto;
+    margin-bottom: 1;
+}
+#drive-row Button {
+    min-width: 6;
+    margin-right: 1;
+}
+#dialog.danger {
+    border: heavy $error;
+}
+.danger-title {
+    color: $error;
+    text-style: bold;
+    margin-bottom: 1;
+}
+.danger-reason {
+    color: $error;
+    text-style: bold;
+}
+.warn-reason {
+    color: $warning;
+}
+ToolCard.danger .tool-header {
+    color: $error;
+}
+MentionList {
+    display: none;
+    height: auto;
+    max-height: 10;
+    margin: 0 1;
+    border: round $panel;
+    background: $surface;
+}
+PermissionBar {
+    display: none;
+    height: auto;
+    margin: 0 1;
+    padding: 0 1;
+    background: $surface;
+    border-left: thick $warning;
+}
+PermissionBar.danger {
+    border-left: thick $error;
+}
+#perm-text {
+    width: 1fr;
+}
+.chip {
+    width: auto;
+    height: 1;
+    margin-left: 1;
+    padding: 0 0;
+    text-style: bold;
+}
+.chip.ok {
+    background: $success;
+    color: $background;
+}
+.chip.no {
+    background: $panel;
+}
+.chip.full {
+    background: $warning 25%;
+}
+.chip:hover {
+    text-style: bold reverse;
+}
+ToolCard.pending .tool-header {
+    color: $warning;
+}
+#status-access {
+    width: auto;
+    margin-left: 3;
+}

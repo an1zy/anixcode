@@ -1,0 +1,46 @@
+[project]
+name = "anixcode"
+version = "0.8.0"
+description = "AI coding agent for the terminal. Bring your own API key."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = ["textual>=1.0", "httpx>=0.27"]
+
+authors = [{ name = "an1zy" }]
+keywords = ["ai", "agent", "coding", "terminal", "tui", "llm", "deepseek", "openai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development",
+]
+
+[project.urls]
+Homepage = "https://github.com/an1zy/anixcode"
+Issues = "https://github.com/an1zy/anixcode/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[project.scripts]
+anixcode = "anixcode.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["anixcode*"]
+
+[tool.setuptools.package-data]
+"anixcode.tui" = ["*.tcss"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
