@@ -3,7 +3,7 @@ name = "anixcode"
 version = "0.9.0"
 description = "AI coding agent for the terminal. Bring your own API key."
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.11"
 dependencies = ["textual>=1.0", "httpx>=0.27"]
 
@@ -12,14 +12,15 @@ keywords = ["ai", "agent", "coding", "terminal", "tui", "llm", "deepseek", "open
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Topic :: Software Development",
 ]
 
 [project.urls]
 Homepage = "https://github.com/an1zy/anixcode"
+Repository = "https://github.com/an1zy/anixcode"
 Issues = "https://github.com/an1zy/anixcode/issues"
+PyPI = "https://pypi.org/project/anixcode/"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5"]
